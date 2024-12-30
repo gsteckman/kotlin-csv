@@ -1,10 +1,9 @@
 plugins {
-    java
-    kotlin("multiplatform") version "1.7.21"
+    kotlin("multiplatform") version "2.1.0"
     id("org.jetbrains.dokka").version("1.7.20")
+    id("org.jetbrains.kotlinx.kover") version "0.9.0"
     `maven-publish`
     signing
-    jacoco
 }
 
 group = "com.jsoizo"
@@ -38,7 +37,7 @@ kotlin {
             artifact(dokkaJar)
         }
     }
-    js(BOTH) {
+    js {
         browser {
         }
         nodejs {
@@ -129,31 +128,4 @@ publishing {
 
 signing {
     sign(publishing.publications)
-}
-
-/////////////////////////////////////////
-//         Jacoco setting              //
-/////////////////////////////////////////
-jacoco {
-    toolVersion = "0.8.8"
-}
-tasks.jacocoTestReport {
-    val coverageSourceDirs = arrayOf(
-        "commonMain/src",
-        "jvmMain/src"
-    )
-    val classFiles = File("${buildDir}/classes/kotlin/jvm/")
-        .walkBottomUp()
-        .toSet()
-    classDirectories.setFrom(classFiles)
-    sourceDirectories.setFrom(files(coverageSourceDirs))
-    additionalSourceDirs.setFrom(files(coverageSourceDirs))
-
-    executionData
-        .setFrom(files("${buildDir}/jacoco/jvmTest.exec"))
-
-    reports {
-        xml.required.set(true)
-        html.required.set(false)
-    }
 }
