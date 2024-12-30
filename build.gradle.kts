@@ -19,10 +19,10 @@ repositories {
     mavenCentral()
 }
 
-val dokkaJar = task<Jar>("dokkaJar") {
+val dokkaJar by tasks.registering(Jar::class) {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
-    dependsOn(tasks.dokkaJavadoc)
-    from(tasks.dokkaJavadoc.flatMap { it.outputDirectory })
+    description = "A Javadoc JAR containing Dokka HTML"
+    from(tasks.dokkaHtml.flatMap { it.outputDirectory })
     archiveClassifier.set("javadoc")
 }
 
