@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform") version "2.1.0"
-    id("org.jetbrains.dokka").version("1.7.20")
+    id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.0"
     `maven-publish`
     signing
@@ -13,9 +13,6 @@ buildscript {
     repositories {
         mavenCentral()
     }
-    dependencies {
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.7.20")
-    }
 }
 
 repositories {
@@ -24,6 +21,8 @@ repositories {
 
 val dokkaJar = task<Jar>("dokkaJar") {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
+    dependsOn(tasks.dokkaJavadoc)
+    from(tasks.dokkaJavadoc.flatMap { it.outputDirectory })
     archiveClassifier.set("javadoc")
 }
 
@@ -54,14 +53,14 @@ kotlin {
 
         jvm().compilations["main"].defaultSourceSet {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
             }
         }
         jvm().compilations["test"].defaultSourceSet {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
-                implementation("io.kotest:kotest-runner-junit5:4.6.3")
-                implementation("io.kotest:kotest-assertions-core:4.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation("io.kotest:kotest-runner-junit5:5.9.1")
+                implementation("io.kotest:kotest-assertions-core:5.9.1")
             }
         }
         js().compilations["main"].defaultSourceSet {
