@@ -1,6 +1,6 @@
 plugins {
     java
-    kotlin("multiplatform") version "1.7.21"
+    kotlin("multiplatform") version "2.1.0"
     id("org.jetbrains.dokka").version("1.7.20")
     `maven-publish`
     signing
@@ -38,7 +38,7 @@ kotlin {
             artifact(dokkaJar)
         }
     }
-    js(BOTH) {
+    js {
         browser {
         }
         nodejs {
