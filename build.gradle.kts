@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("multiplatform") version "2.1.0"
     id("org.jetbrains.dokka") version "2.0.0"
@@ -28,8 +30,8 @@ val dokkaJar by tasks.registering(Jar::class) {
 
 kotlin {
     jvm {
-        compilations.forEach {
-            it.kotlinOptions.jvmTarget = "1.8"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
         }
         //https://docs.gradle.org/current/userguide/publishing_maven.html
         mavenPublication {
