@@ -38,8 +38,7 @@ jobs:
 
       - name: Run checks and generate report
         run: |
-          ./gradlew clean check
-          ./gradlew jacocoTestReport
+          ./gradlew clean check koverXmlReport
 
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
