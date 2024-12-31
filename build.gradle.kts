@@ -4,10 +4,10 @@ import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("multiplatform") version "2.1.0"
-    id("org.jetbrains.dokka") version "2.0.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.0"
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.mavenPublish)
 }
 
 group = "com.jsoizo"
@@ -47,14 +47,12 @@ kotlin {
 
         jvm().compilations["main"].defaultSourceSet {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
         jvm().compilations["test"].defaultSourceSet {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                implementation("io.kotest:kotest-runner-junit5:5.9.1")
-                implementation("io.kotest:kotest-assertions-core:5.9.1")
+                implementation(libs.bundles.kotest)
             }
         }
         js().compilations["main"].defaultSourceSet {
