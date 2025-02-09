@@ -2,14 +2,14 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
     java
-    kotlin("multiplatform") version "1.9.22"
-    id("org.jetbrains.dokka").version("1.6.21")
+    kotlin("multiplatform") version "2.1.10"
+    id("org.jetbrains.dokka").version("1.7.20")
     `maven-publish`
     signing
     jacoco
 }
 
-group = "com.github.doyaaaaaken"
+group = "com.jsoizo"
 version = "1.10.0"
 
 buildscript {
@@ -17,7 +17,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.6.21")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.7.20")
     }
 }
 
@@ -51,8 +51,8 @@ kotlin {
         browser()
     }
     sourceSets {
-        val commonMain by getting
-        val commonTest by getting {
+        commonMain {}
+        commonTest {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
@@ -93,26 +93,26 @@ publishing {
         (this as MavenPublication).pom {
             name.set("kotlin-csv")
             description.set("Kotlin CSV Reader/Writer")
-            url.set("https://github.com/doyaaaaaken/kotlin-csv")
+            url.set("https://github.com/jsoizo/kotlin-csv")
 
             organization {
-                name.set("com.github.doyaaaaaken")
-                url.set("https://github.com/doyaaaaaken")
+                name.set("com.jsoizo")
+                url.set("https://github.com/jsoizo")
             }
             licenses {
                 license {
                     name.set("Apache License 2.0")
-                    url.set("https://github.com/doyaaaaaken/kotlin-csv/blob/master/LICENSE")
+                    url.set("https://github.com/jsoizo/kotlin-csv/blob/master/LICENSE")
                 }
             }
             scm {
-                url.set("https://github.com/doyaaaaaken/kotlin-csv")
-                connection.set("scm:git:git://github.com/doyaaaaaken/kotlin-csv.git")
-                developerConnection.set("https://github.com/doyaaaaaken/kotlin-csv")
+                url.set("https://github.com/jsoizo/kotlin-csv")
+                connection.set("scm:git:git://github.com/jsoizo/kotlin-csv.git")
+                developerConnection.set("https://github.com/jsoizo/kotlin-csv")
             }
             developers {
                 developer {
-                    name.set("doyaaaaaken")
+                    name.set("jsoizo")
                 }
             }
         }
@@ -159,7 +159,7 @@ tasks.jacocoTestReport {
         .setFrom(files("${buildDir}/jacoco/jvmTest.exec"))
 
     reports {
-        xml.isEnabled = true
-        html.isEnabled = false
+        xml.required.set(true)
+        html.required.set(false)
     }
 }

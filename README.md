@@ -1,16 +1,15 @@
 <h1 align="center">kotlin-csv</h1>
 
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-1.9.3-blue.svg?cacheSeconds=2592000" />
-  <a href="https://github.com/doyaaaaaken/kotlin-csv/blob/master/LICENSE">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.0-blue.svg?cacheSeconds=2592000" />
+  <a href="https://github.com/jsoizo/kotlin-csv/blob/master/LICENSE">
     <img alt="License: Apache License 2.0" src="https://img.shields.io/badge/License-Apache License 2.0-yellow.svg" target="_blank" />
   </a>
-  <img alt="CircleCI" src="https://circleci.com/gh/doyaaaaaken/kotlin-csv/tree/master.svg?style=svg" />
-  <a href="https://codecov.io/gh/doyaaaaaken/kotlin-csv">
-    <img src="https://codecov.io/gh/doyaaaaaken/kotlin-csv/branch/master/graph/badge.svg" alt="codecov" />
+  <a href="https://codecov.io/gh/jsoizo/kotlin-csv">
+    <img src="https://codecov.io/gh/jsoizo/kotlin-csv/branch/master/graph/badge.svg" alt="codecov" />
   </a>
-  <a href="https://www.codefactor.io/repository/github/doyaaaaaken/kotlin-csv">
-    <img src="https://www.codefactor.io/repository/github/doyaaaaaken/kotlin-csv/badge" alt="CodeFactor" />
+  <a href="https://www.codefactor.io/repository/github/jsoizo/kotlin-csv">
+    <img src="https://www.codefactor.io/repository/github/jsoizo/kotlin-csv/badge" alt="CodeFactor" />
   </a>
 </p>
 
@@ -38,36 +37,40 @@ Pure Kotlin CSV Reader/Writer.
 
 ### Gradle
 
-```gradle
-// Gradle Kotlin DSL
-implementation("com.github.doyaaaaaken:kotlin-csv-jvm:1.9.3") // for JVM platform
-implementation("com.github.doyaaaaaken:kotlin-csv-js:1.9.3") // for Kotlin JS platform
+for Kotlin DSL
 
-// Gradle Groovy DSL
-implementation 'com.github.doyaaaaaken:kotlin-csv-jvm:1.9.3' // for JVM platform
-implementation 'com.github.doyaaaaaken:kotlin-csv-js:1.9.3' // for Kotlin JS platform
+```kotlin
+implementation("com.jsoizo:kotlin-csv-jvm:1.10.0") // for JVM platform
+implementation("com.jsoizo:kotlin-csv-js:1.10.0") // for Kotlin JS platform
+```
+
+for Gradle DSL
+
+```groovy
+implementation 'com.jsoizo:kotlin-csv-jvm:1.10.0' // for JVM platform
+implementation 'com.jsoizo:kotlin-csv-js:1.10.0' // for Kotlin JS platform
 ```
 
 ### Maven
 
 ```maven
 <dependency>
-  <groupId>com.github.doyaaaaaken</groupId>
+  <groupId>com.jsoizo</groupId>
   <artifactId>kotlin-csv-jvm</artifactId>
-  <version>1.9.3</version>
+  <version>1.10.0</version>
 </dependency>
 <dependency>
-  <groupId>com.github.doyaaaaaken</groupId>
+  <groupId>com.jsoizo</groupId>
   <artifactId>kotlin-csv-js</artifactId>
-  <version>1.9.3</version>
+  <version>1.10.0</version>
 </dependency>
 ```
 
 ### [kscript](https://github.com/holgerbrandl/kscript)
 
 ```kotlin
-@file:DependsOn("com.github.doyaaaaaken:kotlin-csv-jvm:1.9.3") // for JVM platform
-@file:DependsOn("com.github.doyaaaaaken:kotlin-csv-js:1.9.3") // for Kotlin JS platform
+@file:DependsOn("com.jsoizo:kotlin-csv-jvm:1.10.0") // for JVM platform
+@file:DependsOn("com.jsoizo:kotlin-csv-js:1.10.0") // for Kotlin JS platform
 ```
 
 ## Examples
@@ -115,7 +118,7 @@ csvReader().open("test1.csv") {
 csvReader().open("test2.csv") {
     readAllWithHeaderAsSequence().forEach { row: Map<String, String> ->
         //Do something
-        println(row) //{id=1, name=doyaaaaaken}
+        println(row) //{id=1, name=jsoizo}
     }
 }
 ```
@@ -276,7 +279,7 @@ val writer = csvWriter {
 
 **Documents**
 
-* [Change Logs](https://github.com/doyaaaaaken/kotlin-csv/releases)
+* [Change Logs](https://github.com/jsoizo/kotlin-csv/releases)
 
 **Libraries which use kotlin-csv**
 
@@ -286,13 +289,13 @@ val writer = csvWriter {
 
 ## 🤝 Contributing
 
-Contributions, [issues](https://github.com/doyaaaaaken/kotlin-csv/issues) and feature requests are welcome!
+Contributions, [issues](https://github.com/jsoizo/kotlin-csv/issues) and feature requests are welcome!
 If you have questions, ask away in [Kotlin Slack's](https://kotlinlang.slack.com) `kotlin-csv` room.
 
 ## 💻 Development
 
 ```sh
-git clone git@github.com:doyaaaaaken/kotlin-csv.git
+git clone git@github.com:jsoizo/kotlin-csv.git
 cd kotlin-csv
 ./gradlew check
 ```
@@ -303,10 +306,14 @@ Give a ⭐️ if this project helped you!
 
 ## 📝 License
 
-Copyright © 2019 [doyaaaaaken](https://github.com/doyaaaaaken).  
+Copyright © 2024 [jsoizo](https://github.com/jsoizo).
 This project is licensed under [Apache 2.0](LICENSE).
 
 ***
 _This project is inspired ❤️ by [scala-csv](https://github.com/tototoshi/scala-csv)_
 
 _This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
+
+## Acknowledgments
+
+This project was originally created by [@doyaaaaaken](https://github.com/doyaaaaaken). The initial work and contributions are greatly appreciated.
