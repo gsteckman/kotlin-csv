@@ -1,6 +1,7 @@
 package com.jsoizo.kotlincsv.dsl
 
 import com.jsoizo.kotlincsv.client.CsvWriter
+import com.jsoizo.kotlincsv.client.CsvWriterImpl
 import com.jsoizo.kotlincsv.dsl.context.CsvWriterContext
 
 /**
@@ -30,5 +31,5 @@ import com.jsoizo.kotlincsv.dsl.context.CsvWriterContext
  */
 fun csvWriter(init: CsvWriterContext.() -> Unit = {}): CsvWriter {
     val context = CsvWriterContext().apply(init)
-    return CsvWriter(context)
+    return CsvWriterImpl(context)
 }

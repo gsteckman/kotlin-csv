@@ -1,6 +1,6 @@
-package com.jsoizo.kotlincsv.client
+package com.jsoizo.kotlincsv.dsl
 
-interface ICsvFileWriter {
+interface CsvWriterScope {
     fun writeRow(row: List<Any?>)
 
     fun writeRow(vararg entry: Any?)

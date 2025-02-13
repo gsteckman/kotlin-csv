@@ -1,6 +1,6 @@
 package com.jsoizo.kotlincsv.dsl
 
-import com.jsoizo.kotlincsv.client.CsvReader
+import com.jsoizo.kotlincsv.client.CsvReaderImpl
 import com.jsoizo.kotlincsv.dsl.context.ExcessFieldsRowBehaviour
 import com.jsoizo.kotlincsv.dsl.context.InsufficientFieldsRowBehaviour
 import io.kotest.assertions.assertSoftly
@@ -14,7 +14,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 class CsvReaderDslTest : StringSpec({
     "csvReader method should work as global method with no argument" {
         val reader = csvReader()
-        reader.shouldBeTypeOf<CsvReader>()
+        reader.shouldBeTypeOf<CsvReaderImpl>()
     }
     "csvReader method should work as dsl" {
         val reader = csvReader {
@@ -28,7 +28,6 @@ class CsvReaderDslTest : StringSpec({
             excessFieldsRowBehaviour = ExcessFieldsRowBehaviour.IGNORE
         }
         assertSoftly {
-            reader.charset shouldBe Charsets.ISO_8859_1.name()
             reader.quoteChar shouldBe '\''
             reader.delimiter shouldBe '\t'
             reader.skipEmptyLine shouldBe true

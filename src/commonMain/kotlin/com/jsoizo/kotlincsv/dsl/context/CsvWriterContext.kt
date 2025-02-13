@@ -1,6 +1,5 @@
 package com.jsoizo.kotlincsv.dsl.context
 
-import com.jsoizo.kotlincsv.util.Const
 import com.jsoizo.kotlincsv.util.CsvDslMarker
 
 /**
@@ -10,17 +9,6 @@ import com.jsoizo.kotlincsv.util.CsvDslMarker
  */
 @CsvDslMarker
 interface ICsvWriterContext {
-    /**
-     * Charset encoding
-     *
-     * The name must be supported by [java.nio.charset.Charset].
-     *
-     * ex.)
-     *     "UTF-8"
-     *     "SJIS"
-     */
-    val charset: String
-
     /**
      * Character used as delimiter between each fields
      *
@@ -76,7 +64,6 @@ interface ICsvWriterContext {
  */
 @CsvDslMarker
 class CsvWriterContext : ICsvWriterContext {
-    override var charset = Const.defaultCharset
     override var delimiter: Char = ','
     override var nullCode: String = ""
     override var lineTerminator: String = "\r\n"

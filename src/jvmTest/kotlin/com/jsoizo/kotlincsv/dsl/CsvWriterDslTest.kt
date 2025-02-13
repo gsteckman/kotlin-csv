@@ -1,6 +1,6 @@
 package com.jsoizo.kotlincsv.dsl
 
-import com.jsoizo.kotlincsv.client.CsvWriter
+import com.jsoizo.kotlincsv.client.CsvWriterImpl
 import com.jsoizo.kotlincsv.dsl.context.WriteQuoteMode
 import io.kotest.assertions.assertSoftly
 import io.kotest.core.spec.style.StringSpec
@@ -13,11 +13,10 @@ import io.kotest.matchers.types.shouldBeTypeOf
 class CsvWriterDslTest : StringSpec({
     "csvWriter method should work as global method with no argument" {
         val writer = csvWriter()
-        writer.shouldBeTypeOf<CsvWriter>()
+        writer.shouldBeTypeOf<CsvWriterImpl>()
     }
     "csvWriter method should work as dsl" {
         val writer = csvWriter {
-            charset = Charsets.ISO_8859_1.name()
             delimiter = '\t'
             nullCode = "NULL"
             lineTerminator = "\n"
@@ -29,7 +28,6 @@ class CsvWriterDslTest : StringSpec({
             }
         }
         assertSoftly {
-            writer.charset shouldBe Charsets.ISO_8859_1.name()
             writer.delimiter shouldBe '\t'
             writer.nullCode shouldBe "NULL"
             writer.lineTerminator shouldBe "\n"

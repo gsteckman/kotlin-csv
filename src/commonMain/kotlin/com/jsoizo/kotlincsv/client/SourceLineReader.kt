@@ -1,13 +1,14 @@
 package com.jsoizo.kotlincsv.client
 
 import com.jsoizo.kotlincsv.util.Const
+import kotlinx.io.EOFException
+import kotlinx.io.Source
+import kotlinx.io.readCodePointValue
 
 /**
- * buffered reader which can read line with line terminator
+ * reader from a [Source] which can read line with line terminator.
  */
-internal class BufferedLineReader(
-    private val br: Reader
-) {
+internal class SourceLineReader(private val br: Source) {
     companion object {
         private const val BOM = Const.BOM
     }
@@ -18,9 +19,9 @@ internal class BufferedLineReader(
     fun readLineWithTerminator(): String? {
         val sb = StringBuilder()
         do {
-            val c = br.read()
-
-            if (c == -1) {
+            val c = try{
+                br.readCodePointValue()
+            } catch(_: EOFException){
                 if (sb.isEmptyLine()) {
                     return null
                 } else {
@@ -35,23 +36,21 @@ internal class BufferedLineReader(
             }
 
             if (ch == '\r') {
-                br.mark(1)
-                val c2 = br.read()
-                if (c2 == -1) {
+                val s2 = br.peek()
+
+                val c2 = try {
+                    s2.readCodePointValue()
+                } catch(_: EOFException){
                     break
-                } else if (c2.toChar() == '\n') {
-                    sb.append('\n')
-                } else {
-                    br.reset()
                 }
 
+                if (c2.toChar() == '\n') {
+                    sb.append('\n')
+                    br.readCodePointValue()
+                }
                 break
             }
         } while (true)
         return sb.toString()
-    }
-
-    fun close() {
-        br.close()
     }
 }

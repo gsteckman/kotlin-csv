@@ -3,32 +3,40 @@ package com.jsoizo.kotlincsv.client
 import com.jsoizo.kotlincsv.dsl.context.CsvWriterContext
 import com.jsoizo.kotlincsv.dsl.context.WriteQuoteMode
 import com.jsoizo.kotlincsv.dsl.csvWriter
-import com.jsoizo.kotlincsv.util.Const
 import io.kotest.assertions.assertSoftly
 import io.kotest.core.spec.style.WordSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
+import kotlinx.io.Buffer
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
 import java.io.File
 import java.nio.charset.Charset
-
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class CsvWriterTest : WordSpec({
 
     val testFileName = "test.csv"
 
-    afterTest { File(testFileName).delete() }
+    afterTest {
+        // afterTest getting called more than once and kotlinx-io throws exception if trying to
+        // delete non-existent file
+        Path(testFileName).also {
+            if(SystemFileSystem.exists(it)) {
+                SystemFileSystem.delete(it)
+            }
+        }
+    }
 
     fun readTestFile(charset: Charset = Charsets.UTF_8): String {
         return File(testFileName).readText(charset)
     }
 
     "CsvWriter class constructor" should {
-        "be created with no argument" {
-            val writer = CsvWriter()
-            writer.charset shouldBe Const.defaultCharset
-        }
         "be created with CsvWriterContext argument" {
             val context = CsvWriterContext().apply {
-                charset = Charsets.ISO_8859_1.name()
                 delimiter = '\t'
                 nullCode = "NULL"
                 lineTerminator = "\n"
@@ -39,9 +47,8 @@ class CsvWriterTest : WordSpec({
                     mode = WriteQuoteMode.ALL
                 }
             }
-            val writer = CsvWriter(context)
+            val writer = CsvWriterImpl(context)
             assertSoftly {
-                writer.charset shouldBe Charsets.ISO_8859_1.name()
                 writer.delimiter shouldBe '\t'
                 writer.nullCode shouldBe "NULL"
                 writer.lineTerminator shouldBe "\n"
@@ -59,26 +66,27 @@ class CsvWriterTest : WordSpec({
         val expected = "a,b,\r\nd,2,1.0\r\n"
 
         "write simple csv data into file with writing each rows" {
-            csvWriter().open(testFileName) {
+            val buffer = Buffer()
+            csvWriter().open(buffer) {
                 writeRow(row1)
                 writeRow(row2)
             }
-            val actual = readTestFile()
+            val actual = buffer.readString()
             actual shouldBe expected
         }
 
         "write simple csv data into file with writing all at one time" {
-            csvWriter().open(testFileName) { writeRows(listOf(row1, row2)) }
+            csvWriter().open(Path(testFileName)) { writeRows(listOf(row1, row2)) }
             val actual = readTestFile()
             actual shouldBe expected
         }
 
         "write simple csv data to the tail of existing file with append = true" {
             val writer = csvWriter()
-            writer.open(File(testFileName), true) {
+            writer.open(Path(testFileName), true) {
                 writeRows(listOf(row1, row2))
             }
-            writer.open(File(testFileName), true) {
+            writer.open(Path(testFileName), true) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -87,27 +95,13 @@ class CsvWriterTest : WordSpec({
 
         "overwrite simple csv data with append = false" {
             val writer = csvWriter()
-            writer.open(File(testFileName), false) {
+            writer.open(Path(testFileName), false) {
                 writeRows(listOf(row2, row2, row2))
             }
-            writer.open(File(testFileName), false) {
+            writer.open(Path(testFileName), false) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
-            actual shouldBe expected
-        }
-    }
-
-    "writeAsString method" should {
-        val row1 = listOf("a", "b", null)
-        val row2 = listOf("d", "2", "1.0")
-        val expected = "a,b,\r\nd,2,1.0\r\n"
-
-        "write simple csv data to String" {
-            val actual = csvWriter().writeAsString {
-                writeRow(row1)
-                writeRow(row2)
-            }
             actual shouldBe expected
         }
     }
@@ -117,46 +111,45 @@ class CsvWriterTest : WordSpec({
         val expected = "a,b,c\r\nd,e,f\r\n"
 
         "write data with target file name" {
-            csvWriter().writeAll(rows, testFileName)
+            csvWriter().writeAll(rows, Path(testFileName))
             val actual = readTestFile()
             actual shouldBe expected
         }
 
-        "write data with target file (java.io.File)" {
-            csvWriter().writeAll(rows, File(testFileName))
+        "write data to Sink" {
+            val buffer = Buffer()
+            csvWriter().writeAll(rows, buffer)
+            val actual = buffer.readString()
+            actual shouldBe expected
+        }
+    }
+
+    "writeAllAsync method without calling `open` method" should {
+        val rows = listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
+        val expected = "a,b,c\r\nd,e,f\r\n"
+
+        "write data with target file name" {
+            csvWriter().writeAllAsync(rows, Path(testFileName))
             val actual = readTestFile()
             actual shouldBe expected
         }
 
-        "write data with target output stream (java.io.OutputStream)" {
-            csvWriter().writeAll(rows, File(testFileName).outputStream())
-            val actual = readTestFile()
-            actual shouldBe expected
-        }
-
-        "write data to String" {
-            val actual = csvWriter().writeAllAsString(rows)
+        "write data to Sink" {
+            val buffer = Buffer()
+            csvWriter().writeAllAsync(rows, buffer)
+            val actual = buffer.readString()
             actual shouldBe expected
         }
     }
 
     "Customized CsvWriter" should {
-        "write csv with SJIS charset" {
-            csvWriter {
-                charset = "SJIS"
-            }.open(File(testFileName)) {
-                writeRows(listOf(listOf("あ", "い")))
-            }
-            val actual = readTestFile(Charset.forName("SJIS"))
-            actual shouldBe "あ,い\r\n"
-        }
         "write csv with '|' delimiter" {
             val row1 = listOf("a", "b")
             val row2 = listOf("c", "d")
             val expected = "a|b\r\nc|d\r\n"
             csvWriter {
                 delimiter = '|'
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -166,7 +159,7 @@ class CsvWriterTest : WordSpec({
             val row = listOf(null, null)
             csvWriter {
                 nullCode = "NULL"
-            }.open(testFileName) {
+            }.open(Path(testFileName)) {
                 writeRow(row)
             }
             val actual = readTestFile()
@@ -178,7 +171,7 @@ class CsvWriterTest : WordSpec({
             val expected = "a,b\nc,d\n"
             csvWriter {
                 lineTerminator = "\n"
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -192,7 +185,7 @@ class CsvWriterTest : WordSpec({
                 quote {
                     mode = WriteQuoteMode.ALL
                 }
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -206,7 +199,7 @@ class CsvWriterTest : WordSpec({
                 quote {
                     mode = WriteQuoteMode.NON_NUMERIC
                 }
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -220,7 +213,7 @@ class CsvWriterTest : WordSpec({
                 quote {
                     char = '\''
                 }
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -234,7 +227,7 @@ class CsvWriterTest : WordSpec({
                     mode = WriteQuoteMode.ALL
                     char = '_'
                 }
-            }.writeAll(rows, testFileName)
+            }.writeAll(rows, Path(testFileName))
             val actual = readTestFile()
             actual shouldBe expected
         }
@@ -245,7 +238,7 @@ class CsvWriterTest : WordSpec({
             csvWriter {
                 lineTerminator = "\n"
                 outputLastLineTerminator = false
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -258,7 +251,7 @@ class CsvWriterTest : WordSpec({
             csvWriter {
                 lineTerminator = "\n"
                 outputLastLineTerminator = true
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -270,7 +263,7 @@ class CsvWriterTest : WordSpec({
             val expected = "a,b\r\nc,d"
             csvWriter {
                 outputLastLineTerminator = false
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -282,7 +275,7 @@ class CsvWriterTest : WordSpec({
             val expected = "\uFEFFa,b\r\nc,d\r\n"
             csvWriter {
                 prependBOM = true
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRows(listOf(row1, row2))
             }
             val actual = readTestFile()
@@ -298,7 +291,7 @@ class CsvWriterTest : WordSpec({
             val expected = "a,b\r\nc,d\r\ne,f\r\ng,h\r\n1,2\r\n3,4"
             csvWriter {
                 outputLastLineTerminator = false
-            }.open(File(testFileName)) {
+            }.open(Path(testFileName)) {
                 writeRow(row1)
                 writeRows(listOf(row2, row3))
                 writeRow(row4)
@@ -316,7 +309,7 @@ class CsvWriterTest : WordSpec({
 
         "get raw writer from fileName string and can use it" {
             @OptIn(KotlinCsvExperimental::class)
-            val writer = csvWriter().openAndGetRawWriter(testFileName)
+            val writer = CsvWriterImpl().openAndGetRawWriter(testFileName)
             writer.writeRow(row1)
             writer.writeRow(row2)
             writer.close()
@@ -324,27 +317,77 @@ class CsvWriterTest : WordSpec({
             val actual = readTestFile()
             actual shouldBe expected
         }
+    }
 
-        "get raw writer from java.io.File and can use it" {
-            @OptIn(KotlinCsvExperimental::class)
-            val writer = csvWriter().openAndGetRawWriter(File(testFileName))
-            writer.writeRow(row1)
-            writer.writeRow(row2)
-            writer.close()
-
+    "suspend writeRow method" should {
+        "suspend write any primitive types to Path" {
+            val row = listOf("String", 'C', 1, 2L, 3.45, true, null)
+            val expected = "String,C,1,2,3.45,true,\r\n"
+            csvWriter().openAsync(Path(testFileName)) {
+                writeRow(row)
+            }
             val actual = readTestFile()
             actual shouldBe expected
         }
+        "suspend write any primitive types to Sink" {
+            val row = listOf("String", 'C', 1, 2L, 3.45, true, null)
+            val expected = "String,C,1,2,3.45,true,\r\n"
+            val buffer = Buffer()
+            csvWriter().openAsync(buffer) {
+                writeRow(row)
+            }
+            val actual = buffer.readString()
+            actual shouldBe expected
+        }
+        "suspend write row from variable arguments" {
+            val date1 = LocalDate.of(2019, 8, 19)
+            val date2 = LocalDateTime.of(2020, 9, 20, 14, 32, 21)
 
-        "get raw writer from OutputStream and can use it" {
-            val ops = File(testFileName).outputStream()
-
-            @OptIn(KotlinCsvExperimental::class)
-            val writer = csvWriter().openAndGetRawWriter(ops)
-            writer.writeRow(row1)
-            writer.writeRow(row2)
-            writer.close()
-
+            val expected = "a,b,c\r\n" +
+                    "d,e,f\r\n" +
+                    "1,2,3\r\n" +
+                    "2019-08-19,2020-09-20T14:32:21\r\n"
+            csvWriter().openAsync(Path(testFileName)) {
+                writeRow("a", "b", "c")
+                writeRow("d", "e", "f")
+                writeRow(1, 2, 3)
+                writeRow(date1, date2)
+            }
+            val actual = readTestFile()
+            actual shouldBe expected
+        }
+        "suspend write all Sequence data" {
+            val rows = listOf(listOf("a", "b", "c"), listOf("d", "e", "f")).asSequence()
+            val expected = "a,b,c\r\nd,e,f\r\n"
+            csvWriter().openAsync(Path(testFileName)) {
+                writeRows(rows)
+            }
+            val actual = readTestFile()
+            actual shouldBe expected
+        }
+    }
+    "suspend flush method" should {
+        "flush stream" {
+            val row = listOf("a", "b")
+            csvWriter().openAsync(Path(testFileName)) {
+                writeRow(row)
+                flush()
+                val actual = readTestFile()
+                actual shouldBe "a,b\r\n"
+            }
+        }
+    }
+    "validate suspend test as flow" should {
+        "execute line" {
+            val rows = listOf(listOf("a", "b", "c"), listOf("d", "e", "f")).asSequence()
+            val expected = "a,b,c\r\nd,e,f\r\n"
+            csvWriter().openAsync(Path(testFileName)) {
+                delay(100)
+                rows.forEach {
+                    delay(100)
+                    writeRow(it)
+                }
+            }
             val actual = readTestFile()
             actual shouldBe expected
         }

@@ -1,46 +1,27 @@
 package com.jsoizo.kotlincsv.client
 
-import com.jsoizo.kotlincsv.dsl.context.CsvReaderContext
 import com.jsoizo.kotlincsv.dsl.context.ExcessFieldsRowBehaviour
 import com.jsoizo.kotlincsv.dsl.context.InsufficientFieldsRowBehaviour
 import com.jsoizo.kotlincsv.dsl.csvReader
 import com.jsoizo.kotlincsv.util.CSVFieldNumDifferentException
 import com.jsoizo.kotlincsv.util.CSVParseFormatException
-import com.jsoizo.kotlincsv.util.Const
 import com.jsoizo.kotlincsv.util.MalformedCSVException
 import io.kotest.assertions.assertSoftly
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.WordSpec
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import java.io.File
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
 
-class CsvReaderTest : WordSpec({
-    "CsvReader class constructor" should {
-        "be created with no argument" {
-            val reader = CsvReader()
-            reader.charset shouldBe Const.defaultCharset
-        }
-        "be created with CsvReaderContext argument" {
-            val context = CsvReaderContext().apply {
-                charset = Charsets.ISO_8859_1.name()
-                quoteChar = '\''
-                delimiter = '\t'
-                escapeChar = '"'
-                skipEmptyLine = true
-            }
-            val reader = CsvReader(context)
-            assertSoftly {
-                reader.charset shouldBe Charsets.ISO_8859_1.name()
-                reader.quoteChar shouldBe '\''
-                reader.delimiter shouldBe '\t'
-                reader.escapeChar shouldBe '"'
-                reader.skipEmptyLine shouldBe true
-            }
-        }
-    }
-
+/**
+ * This class is not in commonTest because reading Path(s) from files is not supported on all
+ * platforms.
+ */
+class CsvReaderTest : StringSpec({
     "readAll method (with String argument)" should {
         "read simple csv" {
             val result = csvReader().readAll(
@@ -91,18 +72,13 @@ class CsvReaderTest : WordSpec({
             }
         }
     }
-
-    "readAll method (with InputStream argument)" should {
-        "read simple csv" {
-            val file = readTestDataFile("simple.csv")
-            val result = csvReader().readAll(file.inputStream())
-            result shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
-        }
-    }
-
-    "readAll method (with File argument)" should {
+    "readAll method (with Path argument)" should {
         "read simple csv" {
             val result = csvReader().readAll(readTestDataFile("simple.csv"))
+            result shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
+        }
+        "read simple csv as receiver" {
+            val result = readTestDataFile("simple.csv").csvReadAll()
             result shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
         }
         "read tsv file" {
@@ -325,7 +301,29 @@ class CsvReaderTest : WordSpec({
             val result = csvReader().readAllWithHeader(file)
             result shouldBe expected
         }
-
+        "read simple csv file as receiver" {
+            val file = readTestDataFile("with-header.csv")
+            val result = file.csvReadAllWithHeader()
+            result shouldBe expected
+        }
+        "read simple csv as Source" {
+            val src = SystemFileSystem.source(readTestDataFile("with-header.csv")).buffered()
+            src.use {
+                CsvReaderImpl().readAllWithHeader(it) shouldBe expected
+            }
+        }
+        "read simple csv as String receiver" {
+            val src = SystemFileSystem.source(readTestDataFile("with-header.csv")).buffered()
+            src.use {
+                it.readString().csvReadAllWithHeader() shouldBe expected
+            }
+        }
+        "read simple csv as Source receiver" {
+            val src = SystemFileSystem.source(readTestDataFile("with-header.csv")).buffered()
+            src.use {
+                it.csvReadAllWithHeader() shouldBe expected
+            }
+        }
         "throw on duplicated headers" {
             val file = readTestDataFile("with-duplicate-header.csv")
             shouldThrow<MalformedCSVException> { csvReader().readAllWithHeader(file) }
@@ -356,12 +354,6 @@ class CsvReaderTest : WordSpec({
             result shouldBe expected
         }
 
-        "read from InputStream" {
-            val file = readTestDataFile("with-header.csv")
-            val result = csvReader().readAllWithHeader(file.inputStream())
-            result shouldBe expected
-        }
-
         "read from String containing line break" {
             val data = """h1,"h
                     |2",h3
@@ -382,53 +374,22 @@ class CsvReaderTest : WordSpec({
         }
     }
 
-    "open method (with fileName argument)" should {
-        val rows = csvReader().open("src/jvmTest/resources/testdata/csv/simple.csv") {
-            val row1 = readNext()
-            val row2 = readNext()
-            listOf(row1, row2)
+    "open method (with Path argument)" should {
+        val rows = csvReader().open(readTestDataFile("simple.csv")) {
+            readAllAsSequence().toList()
         }
         rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
     }
 
-    "open method (with InputStream argument)" should {
-        val file = readTestDataFile("simple.csv")
-        val rows = csvReader().open(file.inputStream()) {
-            val row1 = readNext()
-            val row2 = readNext()
-            listOf(row1, row2)
-        }
-        rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
-    }
     "execute as suspending function" should {
-        "open suspending method (with fileName argument)" {
-            val rows = csvReader().openAsync("src/jvmTest/resources/testdata/csv/simple.csv") {
-                val row1 = readNext()
-                val row2 = readNext()
-                listOf(row1, row2)
-            }
-            rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
-        }
-        "open suspending method (with file argument)" {
-            val file = readTestDataFile("simple.csv")
-            val rows = csvReader().openAsync(file) {
-                val row1 = readNext()
-                val row2 = readNext()
-                listOf(row1, row2)
-            }
-            rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
-        }
-        "open suspending method (with InputStream argument)" {
-            val fileStream = readTestDataFile("simple.csv").inputStream()
-            val rows = csvReader().openAsync(fileStream) {
-                val row1 = readNext()
-                val row2 = readNext()
-                listOf(row1, row2)
+        "open suspending method (with Path argument)" {
+            val rows = csvReader().openAsync(readTestDataFile("simple.csv")) {
+                readAllAsSequence().toList()
             }
             rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
         }
         "validate test as flow" {
-            val fileStream = readTestDataFile("simple.csv").inputStream()
+            val fileStream = readTestDataFile("simple.csv")
             val rows = mutableListOf<List<String>>()
             csvReader().openAsync(fileStream) {
                 readAllAsSequence().asFlow().collect {
@@ -438,8 +399,28 @@ class CsvReaderTest : WordSpec({
             rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
         }
     }
+
+    "csvReadAllAsSequence method (with Source receiver)" should {
+        val rows = SystemFileSystem.source(readTestDataFile("simple.csv")).buffered().use{
+            it.csvReadAllAsSequence().toList()
+        }
+        rows shouldBe listOf(listOf("a", "b", "c"), listOf("d", "e", "f"))
+    }
+
+    "csvReadAllAsSequenceWithHeader (with Source receiver)" should {
+        val expected = listOf(
+            mapOf("h1" to "a", "h2" to "b", "h3" to "c"),
+            mapOf("h1" to "d", "h2" to "e", "h3" to "f")
+        )
+        val result = SystemFileSystem.source(readTestDataFile("with-header.csv")).buffered().use{
+            it.csvReadAllWithHeaderAsSequence().toList()
+        }
+        result shouldBe expected
+    }
 })
 
-private fun readTestDataFile(fileName: String): File {
-    return File("src/jvmTest/resources/testdata/csv/$fileName")
+private fun readTestDataFile(fileName: String): Path {
+    val path = Path("src", "jvmTest", "resources", "testdata", "csv", fileName)
+    println("Made path: $path")
+    return path
 }

@@ -1,6 +1,7 @@
 package com.jsoizo.kotlincsv.dsl
 
 import com.jsoizo.kotlincsv.client.CsvReader
+import com.jsoizo.kotlincsv.client.CsvReaderImpl
 import com.jsoizo.kotlincsv.dsl.context.CsvReaderContext
 
 /**
@@ -31,5 +32,5 @@ import com.jsoizo.kotlincsv.dsl.context.CsvReaderContext
  */
 fun csvReader(init: CsvReaderContext.() -> Unit = {}): CsvReader {
     val context = CsvReaderContext().apply(init)
-    return CsvReader(context)
+    return CsvReaderImpl(context)
 }

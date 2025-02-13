@@ -1,24 +1,27 @@
 package com.jsoizo.kotlincsv.client
 
+import com.jsoizo.kotlincsv.dsl.CsvWriterScope
 import com.jsoizo.kotlincsv.dsl.context.CsvWriterContext
 import com.jsoizo.kotlincsv.dsl.context.WriteQuoteMode
 import com.jsoizo.kotlincsv.util.Const
-import java.io.Closeable
-import java.io.Flushable
-import java.io.IOException
-import java.io.PrintWriter
+import kotlinx.io.Sink
+import kotlinx.io.writeString
 
 /**
- * CSV Writer class, which controls file I/O flow.
+ * An implementation of [CsvWriterScope] which writes to a kotlinx.io.Sink. This implementation is not
+ * thread safe. If [SinkCsvWriterScope] needs to be accessed from multiple threads,
+ * an additional synchronization is required.
  *
  * @author doyaaaaaken
+ * @author gsteckman
  */
-class CsvFileWriter internal constructor(
-    private val ctx: CsvWriterContext,
-    private val writer: PrintWriter
-) : ICsvFileWriter, Closeable, Flushable {
+internal class SinkCsvWriterScope internal constructor(private val ctx: CsvWriterContext,
+    private val writer: Sink) : CsvWriterScope {
 
-    private val quoteNeededChars = setOf('\r', '\n', ctx.quote.char, ctx.delimiter)
+    private val quoteNeededChars = setOf('\r',
+        '\n',
+        ctx.quote.char,
+        ctx.delimiter)
 
     private var hasWroteInitialChar: Boolean = false
 
@@ -29,10 +32,7 @@ class CsvFileWriter internal constructor(
         willWritePreTerminator()
         writeNext(row)
         willWriteEndTerminator()
-
-        if (writer.checkError()) {
-            throw IOException("Failed to write")
-        }
+        writer.flush()
     }
 
     /**
@@ -54,9 +54,7 @@ class CsvFileWriter internal constructor(
             }
         }
         willWriteEndTerminator()
-        if (writer.checkError()) {
-            throw IOException("Failed to write")
-        }
+        writer.flush()
     }
 
     /**
@@ -73,9 +71,7 @@ class CsvFileWriter internal constructor(
         }
 
         willWriteEndTerminator()
-        if (writer.checkError()) {
-            throw IOException("Failed to write")
-        }
+        writer.flush()
     }
 
     override fun flush() {
@@ -88,7 +84,7 @@ class CsvFileWriter internal constructor(
 
     private fun writeNext(row: List<Any?>) {
         if (!hasWroteInitialChar && ctx.prependBOM) {
-            writer.print(Const.BOM)
+            writer.writeString(Const.BOM.toString())
         }
 
         val rowStr = row.joinToString(ctx.delimiter.toString()) { field ->
@@ -98,7 +94,7 @@ class CsvFileWriter internal constructor(
                 attachQuote(field.toString())
             }
         }
-        writer.print(rowStr)
+        writer.writeString(rowStr)
         hasWroteInitialChar = true
     }
 
@@ -115,7 +111,7 @@ class CsvFileWriter internal constructor(
      * write terminator for next line
      */
     private fun writeTerminator() {
-        writer.print(ctx.lineTerminator)
+        writer.writeString(ctx.lineTerminator)
     }
 
     private fun willWriteEndTerminator() {
@@ -154,6 +150,18 @@ class CsvFileWriter internal constructor(
                 append(ch)
             }
             if (shouldQuote) append(ctx.quote.char)
+        }
+    }
+
+    fun use(block: (SinkCsvWriterScope)->Unit) {
+        writer.use {
+            block(this)
+        }
+    }
+
+    suspend fun useSuspend(block: suspend (SinkCsvWriterScope)->Unit) {
+        writer.use {
+            block(this)
         }
     }
 }

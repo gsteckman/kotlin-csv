@@ -8,10 +8,11 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.kotest)
 }
 
 group = "com.jsoizo"
-version = "1.10.0"
+version = "2.0.0-dev1"
 val projectName = "kotlin-csv"
 
 buildscript {
@@ -36,12 +37,30 @@ kotlin {
         nodejs {
         }
     }
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        nodejs()
+    }
     sourceSets {
-        commonMain {}
+        commonMain {
+            dependencies {
+                implementation(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.io)
+            }
+        }
         commonTest {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+                implementation(libs.kotest.framework.engine)
+                implementation(libs.kotlinx.datetime)
+            }
+        }
+
+        wasmJsTest {
+            dependencies {
+                implementation(kotlin("test-wasm-js"))
             }
         }
 
